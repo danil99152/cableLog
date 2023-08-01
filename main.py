@@ -1,4 +1,6 @@
+import random
 import sqlite3
+import string
 
 import pandas as pd
 import streamlit as st
@@ -65,6 +67,7 @@ aw_id = st.text_input("ID АРМ")
 if st.button("Добавить работника"):
     add_employee(name, department, aw_id)
 
+
 # Вывод данных из двух таблиц
 # c.execute("SELECT * FROM aws")
 # aws = c.fetchall()
@@ -75,10 +78,38 @@ if st.button("Добавить работника"):
 # st.write(aws)
 # st.write(employees)
 
+# Кнопка случайной генерации трех записей
+def random_string(l: int = 8) -> str:
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(l))
+
+
+def generate_random_data():
+    for i in range(3):
+        socket_num = random.randint(1, 10000)
+        socket_port = random.randint(1, 10000)
+        patchpanel_port = random.randint(1, 10000)
+        length = random.randint(10, 1000)
+        pc_name = random_string(14)
+        ip = random_string(14)
+        mac = random_string(14)
+        server_num = 1
+        add_aw(socket_num, socket_port, patchpanel_port, length, pc_name, ip, mac, server_num)
+
+        name = random_string(20)
+        department = random_string(5)
+        c.execute("SELECT id FROM aws ORDER BY id DESC LIMIT 1")
+        aw_id = c.fetchone()
+        add_employee(name, department, aw_id[0])
+
+
+if st.button("Сгенерировать случайно 3 записи"):
+    generate_random_data()
+
 # Запрос на объединение двух таблиц
 query = """
-SELECT e.name, e.department, 
-a.socket_num, a.socket_port, a.patchpanel_port, a.length, a.pc_name, a.ip, a.mac 
+SELECT a.socket_num, a.socket_port, a.patchpanel_port, 
+a.length, e.name, e.department, a.pc_name, a.ip, a.mac 
 FROM employees as e
 JOIN aws as a ON e.aw_id = a.id
 """
@@ -88,9 +119,10 @@ data = c.fetchall()
 
 # Генерация таблицы при помощи DataFrame от pandas и функции table от Streamlit
 df = pd.DataFrame(
-   data=data,
-   columns=("№ розетки", "№ порта розетки", "№ порта на патчпанели",
-            "Длина", "ФИО", "Подразделение", "Имя АРМ", "IP адрес АРМ",
-            "MAC адрес АРМ"))
+    data=data,
+    columns=[
+        "№ розетки", "№ порта розетки", "№ порта на патчпанели",
+        "Длина", "ФИО", "Подразделение", "Имя АРМ", "IP адрес АРМ", "MAC адрес АРМ"
+    ])
 
 st.table(data=df)
