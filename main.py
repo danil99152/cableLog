@@ -1,187 +1,165 @@
-import random
-import sqlite3
-import string
-
-import pandas as pd
 import streamlit as st
+from pandas import DataFrame
 
-# Подключение к БД
-conn = sqlite3.connect('cables.db')
-c = conn.cursor()
+from DAO.DB.engine import engine
+from DAO.aws import AwsDAO
+from DAO.cable_line import CableLineDAO
+from DAO.department import DepartmentDAO
+from DAO.employee import EmployeeDAO
+from DAO.models import Base, CableLine, Employee, AWS, Department, Server
+from DAO.server import ServerDAO
+
+# Содержимое страницы во весь экран
+st.set_page_config(
+    layout='wide'
+)
 
 # Создание таблиц
-c.execute('''
-          CREATE TABLE IF NOT EXISTS servers
-          (server_num INTEGER PRIMARY KEY,
-           server_name TEXT UNIQUE)
-          ''')
+Base.metadata.create_all(bind=engine)
 
-c.execute('''
-          CREATE TABLE IF NOT EXISTS departments
-          (id INTEGER PRIMARY KEY,
-           department_name TEXT UNIQUE)
-          ''')
-
-c.execute('''
-          CREATE TABLE IF NOT EXISTS employees 
-          (id INTEGER PRIMARY KEY, 
-           surname TEXT,
-           name TEXT,
-           middlename TEXT,
-           department_id INTEGER REFERENCES department(id))
-          ''')
-
-c.execute('''
-          CREATE TABLE IF NOT EXISTS aws
-          (id INTEGER PRIMARY KEY,
-           socket_num INT UNIQUE,  
-           socket_port INT UNIQUE,
-           patchpanel_port INT UNIQUE,
-           length INT, 
-           pc_name TEXT UNIQUE,
-           ip TEXT UNIQUE,  
-           mac TEXT UNIQUE,
-           server_num INTEGER REFERENCES server(server_num),
-           employee_id INTEGER REFERENCES employees(id))
-          ''')
-
-
-# Функции записи данных
-def add_server(server_num, server_name):
-    c.execute("INSERT INTO servers VALUES (?, ?)", (server_num, server_name))
-    conn.commit()
-
-
-def add_department(department_name):
-    c.execute("INSERT INTO departments VALUES (?, ?)", (None, department_name))
-    conn.commit()
-
-
-def add_aw(socket_num, socket_port, patchpanel_port, length, pc_name, ip, mac, server_num, employee):
-    c.execute("INSERT INTO aws VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-              (socket_num, socket_port, patchpanel_port, length, pc_name, ip, mac, server_num, employee))
-    conn.commit()
-
-
-def add_employee(surname, name, middlename, department_id):
-    c.execute("INSERT INTO employees VALUES (NULL, ?, ?, ?, ?)",
-              (surname, name, middlename, department_id))
-    conn.commit()
-
+# Списки объектов всех таблиц из БД
+cable_lines: list[CableLine] = CableLineDAO().get_all()
+employees: list[Employee] = EmployeeDAO().get_all()
+aws: list[AWS] = AwsDAO().get_all()
+departments: list[Department] = DepartmentDAO().get_all()
+servers: list[Server] = ServerDAO().get_all()
 
 # Формы ввода данных
 st.write("Добавьте департаменты")
 department_name = st.text_input("Имя департамента")
 if st.button("Добавить департамент"):
-    add_department(department_name)
+    DepartmentDAO().add({
+        'department_name': department_name
+    })
 
 st.write("Введите данные сотрудника")
 surname = st.text_input("Фамилия")
 name = st.text_input("Имя")
 middlename = st.text_input("Отчество")
 
-c.execute("SELECT id, department_name FROM departments")
-departments = dict((x, y) for x, y in c.fetchall())
-department = st.selectbox('Выберите департамент',
-                          options=list(departments.keys()),
-                          format_func=lambda x: departments[x])
+department = st.selectbox(
+    'Выберите департамент',
+    options=[department.department_name for department in departments],
+    key='add_employee',
+)
 
 if st.button("Добавить работника"):
-    add_employee(surname, name, middlename, department)
+    EmployeeDAO().add({
+        'surname': surname,
+        'name': name,
+        'middlename': middlename,
+        'department_id': [
+            department.id for department in departments
+            if department.department_name == st.session_state.add_employee
+        ][0]
+    })
 
 st.write("Добавьте данные по серверным")
 server_num = st.text_input("Номер серверной")
 server_name = st.text_input("Имя серверной")
 if st.button("Добавить серверную"):
-    add_server(server_num, server_name)
+    ServerDAO().add({
+        'server_num': server_num,
+        'server_name': server_name
+    })
 
 st.write("Введите данные АРМ")
-socket_num = st.text_input("Номер розетки")
-socket_port = st.text_input("Номер порта розетки")
-patchpanel_port = st.text_input("Номер порта на патчпанели")
-length = st.text_input("Длина")
 pc_name = st.text_input("Имя АРМ")
 ip = st.text_input("IP адрес АРМ")
 mac = st.text_input("MAC адрес АРМ")
 
-c.execute("SELECT id, surname || ' ' || name || ' ' || middlename FROM employees")
-employees = dict((x, y) for x, y in c.fetchall())
-employee = st.selectbox('Выберите сотрудника',
-                        options=list(employees.keys()),
-                        format_func=lambda x: employees[x])
-
-c.execute("SELECT server_num, server_name FROM servers")
-servers = dict((x, y) for x, y in c.fetchall())
-server_num = st.selectbox('Выберите серверную',
-                          options=list(servers.keys()),
-                          format_func=lambda x: servers[x])
+employee = st.selectbox(
+    'Выберите сотрудника',
+    options=[employee.full_name for employee in employees],
+    key='add_aws',
+)
 
 if st.button("Добавить АРМ"):
-    add_aw(socket_num, socket_port, patchpanel_port, length, pc_name, ip, mac, server_num, employee)
+    AwsDAO().add({
+        'pc_name': pc_name,
+        'ip': ip,
+        'mac': mac,
+        'employee_id': [
+            employee.id for employee in employees
+            if employee.full_name == st.session_state.add_aws
+        ][0]
+    })
 
+st.write("Введите данные кабельной линии")
+socket_num = st.text_input("Номер розетки")
+socket_port = st.text_input("Номер порта розетки")
+patchpanel_port = st.text_input("Номер порта на патчпанели")
+length = st.text_input("Длина")
 
-# Кнопка случайной генерации трех записей
-def random_string(l: int = 8) -> str:
-    letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) for i in range(l))
+add_aws = st.selectbox(
+    'Выберите АРМ',
+    options=[aw.pc_name for aw in aws],
+    key='add_cl',
+)
 
+add_server_num = st.selectbox(
+    'Выберите сервер',
+    options=[server.server_name for server in servers],
+    key='add_cl2',
+)
 
-def generate_random_data():
-    for i in range(3):
-        department_name = random_string(10)
-        add_department(department_name)
-
-        surname = random_string(20)
-        name = random_string(20)
-        middlename = random_string(20)
-        c.execute("SELECT id FROM departments ORDER BY id DESC LIMIT 1")
-        department_id = c.fetchone()[0]
-        add_employee(surname, name, middlename, department_id)
-
-        c.execute("SELECT server_num FROM servers ORDER BY server_num DESC LIMIT 1")
-        server_num = c.fetchone()
-        server_num = 1 if not server_num else server_num[0] + 1
-        server_name = random_string(10) + str(server_num)
-        add_server(server_num, server_name)
-
-        socket_num = random.randint(1, 10000)
-        socket_port = random.randint(1, 10000)
-        patchpanel_port = random.randint(1, 10000)
-        length = random.randint(10, 1000)
-        pc_name = random_string(14)
-        ip = random_string(14)
-        mac = random_string(14)
-        c.execute("SELECT server_num FROM servers ORDER BY server_num DESC LIMIT 1")
-        server_num = c.fetchone()[0]
-        c.execute("SELECT id FROM employees ORDER BY id DESC LIMIT 1")
-        employee = c.fetchone()[0]
-        add_aw(socket_num, socket_port, patchpanel_port, length, pc_name, ip, mac, server_num, employee)
-
-
-if st.button("Сгенерировать случайно 3 записи"):
-    generate_random_data()
-
-# Запрос на объединение двух таблиц
-query = """
-SELECT a.socket_num, a.socket_port, a.patchpanel_port, 
-a.length, e.surname || ' ' || e.name || ' ' || e.middlename, d.department_name, a.pc_name, a.ip, a.mac,
-s.server_name 
-FROM aws as a
-INNER JOIN servers as s ON a.server_num = s.server_num
-INNER JOIN employees as e ON e.id = a.employee_id
-INNER JOIN departments as d ON e.department_id = d.id
-"""
-
-c.execute(query)
-data = c.fetchall()
+if st.button("Добавить кабельную линию"):
+    CableLineDAO().add({
+        'socket_num': socket_num,
+        'socket_port': socket_port,
+        'patchpanel_port': patchpanel_port,
+        'length': length,
+        'aws_id': [
+            aw.id for aw in aws
+            if aw.pc_name == st.session_state.add_cl
+        ][0],
+        'server_id': [
+            server.server_num for server in servers
+            if server.server_name == st.session_state.add_cl2
+        ][0]
+    })
 
 # Генерация таблицы при помощи DataFrame от pandas и функции table от Streamlit
-df = pd.DataFrame(
-    data=data,
+table: DataFrame = DataFrame([(
+    cable_line.socket_num,
+    cable_line.socket_port,
+    cable_line.patchpanel_port,
+    cable_line.length,
+    cable_line.aws.employee.full_name,
+    cable_line.aws.employee.department.department_name,
+    cable_line.aws.pc_name,
+    cable_line.aws.ip,
+    cable_line.aws.mac,
+    cable_line.server.server_name
+) for cable_line in cable_lines],
     columns=[
-        "№ розетки", "№ порта розетки", "№ порта на патчпанели",
-        "Длина", "ФИО", "Подразделение", "Имя АРМ", "IP адрес АРМ", "MAC адрес АРМ",
+        "№ розетки",
+        "№ порта розетки",
+        "№ порта на патчпанели",
+        "Длина",
+        "ФИО",
+        "Подразделение",
+        "Имя АРМ",
+        "IP адрес АРМ",
+        "MAC адрес АРМ",
         "Серверная"
     ])
 
-st.table(data=df)
+st.dataframe(
+    table,
+    use_container_width=True,  # параметр для растяжения по всей ширине контейнера
+    column_config={
+        '№ розетки': st.column_config.NumberColumn(
+            format="№ %d",
+        ),
+        '№ порта розетки': st.column_config.NumberColumn(
+            format="№ %d",
+        ),
+        '№ порта на патчпанели': st.column_config.NumberColumn(
+            format="№ %d",
+        ),
+        'Длина': st.column_config.NumberColumn(
+            format="%dм",
+        ),
+    },
+)

@@ -1,17 +1,11 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, create_engine
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship, DeclarativeBase
 
-# url to DB
-sqlite_database = "sqlite:///cables.db"
 
-# creation engine
-engine = create_engine(sqlite_database)
-
-
-# using creation basemodel before sqlalchemy 2.0.0
+# Использование создания basemodel до sqlalchemy 2.0.0
 # Base = declarative_base()
 
-# using creation basemodel after sqlalchemy 2.0.0
+# Использование создания basemodel после sqlalchemy 2.0.0
 class Base(DeclarativeBase):
     pass
 
@@ -72,7 +66,3 @@ class CableLine(Base):
 
     server_id = Column(Integer, ForeignKey('servers.server_num'), index=True)
     server = relationship(Server, backref='cable_lines')
-
-
-# creation tables if not exist
-Base.metadata.create_all(bind=engine)
