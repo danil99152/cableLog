@@ -24,103 +24,69 @@ aws: list[AWS] = AwsDAO().get_all()
 departments: list[Department] = DepartmentDAO().get_all()
 servers: list[Server] = ServerDAO().get_all()
 
-# Формы ввода данных
-st.write("Добавьте департаменты")
-department_name = st.text_input("Имя департамента")
-if st.button("Добавить департамент"):
-    DepartmentDAO().add({
-        'department_name': department_name
-    })
+# Скрытые таблицы
+with st.expander('Подразделения'):
+    table: DataFrame = DataFrame([(
+        department.department_name,
+    ) for department in departments],
+        columns=[
+            "Подразделение"
+        ])
 
-st.write("Введите данные сотрудника")
-surname = st.text_input("Фамилия")
-name = st.text_input("Имя")
-middlename = st.text_input("Отчество")
+    st.dataframe(
+        table
+    )
 
-department = st.selectbox(
-    'Выберите департамент',
-    options=[department.department_name for department in departments],
-    key='add_employee',
-)
+with st.expander('Работники'):
+    table: DataFrame = DataFrame([(
+        employee.full_name,
+        employee.department.department_name,
+    ) for employee in employees],
+        columns=[
+            "ФИО",
+            "Подразделение"
+        ])
+    st.dataframe(
+        table
+    )
 
-if st.button("Добавить работника"):
-    EmployeeDAO().add({
-        'surname': surname,
-        'name': name,
-        'middlename': middlename,
-        'department_id': [
-            department.id for department in departments
-            if department.department_name == st.session_state.add_employee
-        ][0]
-    })
+with st.expander('Серверные'):
+    table: DataFrame = DataFrame([(
+        server.server_num,
+        server.server_name,
+    ) for server in servers],
+        columns=[
+            "Номер серверной",
+            "Имя серверной"
+        ])
 
-st.write("Добавьте данные по серверным")
-server_num = st.text_input("Номер серверной")
-server_name = st.text_input("Имя серверной")
-if st.button("Добавить серверную"):
-    ServerDAO().add({
-        'server_num': server_num,
-        'server_name': server_name
-    })
+    st.dataframe(
+        table
+    )
 
-st.write("Введите данные АРМ")
-pc_name = st.text_input("Имя АРМ")
-ip = st.text_input("IP адрес АРМ")
-mac = st.text_input("MAC адрес АРМ")
+with st.expander("Список АРМ"):
+    table: DataFrame = DataFrame([(
+        aw.pc_name,
+        aw.ip,
+        aw.mac,
+        aw.employee.full_name
+    ) for aw in aws],
+        columns=[
+            "Имя АРМ",
+            "IP адрес АРМ",
+            "MAC адрес АРМ",
+            "Работник АРМ",
+        ])
 
-employee = st.selectbox(
-    'Выберите сотрудника',
-    options=[employee.full_name for employee in employees],
-    key='add_aws',
-)
+    st.dataframe(
+        table
+    )
 
-if st.button("Добавить АРМ"):
-    AwsDAO().add({
-        'pc_name': pc_name,
-        'ip': ip,
-        'mac': mac,
-        'employee_id': [
-            employee.id for employee in employees
-            if employee.full_name == st.session_state.add_aws
-        ][0]
-    })
-
-st.write("Введите данные кабельной линии")
-socket_num = st.text_input("Номер розетки")
-socket_port = st.text_input("Номер порта розетки")
-patchpanel_port = st.text_input("Номер порта на патчпанели")
-length = st.text_input("Длина")
-
-add_aws = st.selectbox(
-    'Выберите АРМ',
-    options=[aw.pc_name for aw in aws],
-    key='add_cl',
-)
-
-add_server_num = st.selectbox(
-    'Выберите сервер',
-    options=[server.server_name for server in servers],
-    key='add_cl2',
-)
-
-if st.button("Добавить кабельную линию"):
-    CableLineDAO().add({
-        'socket_num': socket_num,
-        'socket_port': socket_port,
-        'patchpanel_port': patchpanel_port,
-        'length': length,
-        'aws_id': [
-            aw.id for aw in aws
-            if aw.pc_name == st.session_state.add_cl
-        ][0],
-        'server_id': [
-            server.server_num for server in servers
-            if server.server_name == st.session_state.add_cl2
-        ][0]
-    })
+st.divider()
 
 # Генерация таблицы при помощи DataFrame от pandas и функции table от Streamlit
-table: DataFrame = DataFrame([(
+st.write("Список кабельных линий")
+cable_lines_table: DataFrame = DataFrame([(
     cable_line.socket_num,
     cable_line.socket_port,
     cable_line.patchpanel_port,
@@ -146,7 +112,7 @@ table: DataFrame = DataFrame([(
     ])
 
 st.dataframe(
-    table,
+    cable_lines_table,
     use_container_width=True,  # параметр для растяжения по всей ширине контейнера
     column_config={
         '№ розетки': st.column_config.NumberColumn(
