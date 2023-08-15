@@ -7,6 +7,7 @@ from DAO.cable_line import CableLineDAO
 from main import aws, servers, cable_lines_table, cable_lines, salt
 
 st.set_page_config(
+    page_title="Линии кабеля",
     layout='wide'
 )
 

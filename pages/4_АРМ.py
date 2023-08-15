@@ -8,6 +8,7 @@ from DAO.aws import AwsDAO
 from main import aws, employees, salt
 
 st.set_page_config(
+    page_title="АРМы",
     layout='wide'
 )
 

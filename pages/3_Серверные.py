@@ -8,6 +8,7 @@ from DAO.server import ServerDAO
 from main import servers, salt
 
 st.set_page_config(
+    page_title="Серверные",
     layout='wide'
 )
 

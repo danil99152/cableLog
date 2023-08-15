@@ -8,6 +8,7 @@ from DAO.department import DepartmentDAO
 from main import departments, salt
 
 st.set_page_config(
+    page_title="Подразделения",
     layout='wide'
 )
 

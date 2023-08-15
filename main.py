@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 
 # Содержимое страницы во весь экран
 st.set_page_config(
+    page_title="Checklist",
     layout='wide'
 )
 
