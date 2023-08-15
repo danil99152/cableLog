@@ -1,9 +1,12 @@
+import hashlib
+
 import streamlit as st
 from pandas import DataFrame
 
+from DAO.admin import AdminDAO
 from DAO.aws import AwsDAO
 from DAO.models import AWS
-from main import aws, employees
+from main import aws, employees, salt
 
 st.set_page_config(
     layout='wide'
@@ -17,7 +20,18 @@ password: str = st.text_input(
     type='password'
 )
 
-if login == "admin" and password == '1234':
+db_login = AdminDAO().get(index=1)[0].login
+key = AdminDAO().get(index=1)[0].password
+
+
+encoded_password = hashlib.pbkdf2_hmac(
+    'sha256',
+    password.encode('utf-8'),
+    salt,
+    100000
+)
+
+if login == db_login and encoded_password == key:
 
     st.header('Список АРМов')
     table: DataFrame = DataFrame([(
@@ -41,19 +55,19 @@ if login == "admin" and password == '1234':
         hide_index=True,
     )
 
-    st.write("Введите данные АРМ")
-    pc_name = st.text_input("Имя АРМ")
-    ip = st.text_input("IP адрес АРМ")
-    mac = st.text_input("MAC адрес АРМ")
-
-    employee = st.selectbox(
-        'Выберите сотрудника',
-        options=[employee.full_name for employee in employees],
-        key='add_aws',
-    )
-
     st.header('Добавить')
     with st.form(key='create_form'):
+        st.write("Введите данные АРМ")
+        pc_name = st.text_input("Имя АРМ")
+        ip = st.text_input("IP адрес АРМ")
+        mac = st.text_input("MAC адрес АРМ")
+
+        employee = st.selectbox(
+            'Выберите сотрудника',
+            options=[employee.full_name for employee in employees],
+            key='add_aws',
+        )
+
         created = st.form_submit_button("Добавить АРМ")
         if created:
             try:

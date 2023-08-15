@@ -1,9 +1,12 @@
 import streamlit as st
 from pandas import DataFrame
 
+from DAO.admin import AdminDAO
 from DAO.employee import EmployeeDAO
 from DAO.models import Employee
-from main import departments, employees
+from main import departments, employees, salt
+import hashlib
+
 
 st.set_page_config(
     layout='wide'
@@ -17,7 +20,19 @@ password: str = st.text_input(
     type='password'
 )
 
-if login == "admin" and password == '1234':
+
+db_login = AdminDAO().get(index=1)[0].login
+key = AdminDAO().get(index=1)[0].password
+
+
+encoded_password = hashlib.pbkdf2_hmac(
+    'sha256',
+    password.encode('utf-8'),
+    salt,
+    100000
+)
+
+if login == db_login and encoded_password == key:
 
     # Список сотрудников
     st.header('Список сотрудников')

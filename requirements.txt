@@ -1,3 +1,4 @@
 streamlit~=1.25.0
 pandas~=2.0.3
 SQLAlchemy~=2.0.19
+python-dotenv~=1.0.0

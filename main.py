@@ -1,13 +1,19 @@
+import hashlib
+import os
+
 import streamlit as st
 from pandas import DataFrame
 
 from DAO.DB.engine import engine
+from DAO.admin import AdminDAO
 from DAO.aws import AwsDAO
 from DAO.cable_line import CableLineDAO
 from DAO.department import DepartmentDAO
 from DAO.employee import EmployeeDAO
 from DAO.models import Base, CableLine, Employee, AWS, Department, Server
 from DAO.server import ServerDAO
+
+from dotenv import load_dotenv
 
 # Содержимое страницы во весь экран
 st.set_page_config(
@@ -16,6 +22,24 @@ st.set_page_config(
 
 # Создание таблиц
 Base.metadata.create_all(bind=engine)
+
+load_dotenv()
+
+salt = b'salt'  # Получение соли, сохраненной для этого пользователя
+
+# Проверка существования админа
+if not AdminDAO().get(1):
+    password = os.getenv('PASSWORD')
+    encoded_password = hashlib.pbkdf2_hmac(
+        'sha256',
+        password.encode('utf-8'),
+        salt,
+        100000
+    )
+    AdminDAO.add({
+        'login': os.getenv('LOGIN'),
+        'password': encoded_password,
+    })
 
 # Списки объектов всех таблиц из БД
 cable_lines: list[CableLine] = CableLineDAO().get_all()

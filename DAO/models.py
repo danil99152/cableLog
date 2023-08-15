@@ -66,3 +66,11 @@ class CableLine(Base):
 
     server_id = Column(Integer, ForeignKey('servers.server_num'), index=True)
     server = relationship(Server, backref='cable_lines')
+
+
+class Admin(Base):
+    __tablename__ = 'admin'
+
+    id = Column(Integer, primary_key=True, index=True)
+    login = Column(String(50), unique=True)
+    password = Column(String(50), unique=True)
