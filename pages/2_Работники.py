@@ -3,7 +3,6 @@ from pandas import DataFrame
 
 from DAO.admin import AdminDAO
 from DAO.employee import EmployeeDAO
-from DAO.models import Employee
 from main import departments, employees, salt
 import hashlib
 
@@ -85,7 +84,7 @@ if login == db_login and encoded_password == key:
 
     # Обновить сотрудника
     st.header('Обновить')
-    select_employee: list[Employee] = st.selectbox(
+    select_employee: str = st.selectbox(
         'Выберите сотрудника',
         options=[employee.full_name for employee in employees],
         key='select_employee',
@@ -140,7 +139,7 @@ if login == db_login and encoded_password == key:
     # Удаление сотрудника
     st.header('Удалить')
     with st.form(key='delete_form'):
-        select_employee: list[Employee] = st.selectbox(
+        select_employee: str = st.selectbox(
             'Выберите сотрудника',
             options=[employee.full_name for employee in employees],
             key='delete_employee',

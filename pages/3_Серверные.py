@@ -3,9 +3,7 @@ import hashlib
 import streamlit as st
 from pandas import DataFrame
 
-import main
 from DAO.admin import AdminDAO
-from DAO.models import Server
 from DAO.server import ServerDAO
 from main import servers, salt
 
@@ -69,7 +67,7 @@ if login == db_login and encoded_password == key:
                 st.error(f'Ошибка добавления: {e}')
 
     st.header('Обновить')
-    select_server: list[Server] = st.selectbox(
+    select_server: str = st.selectbox(
         'Выберите серверную',
         options=[server.server_name for server in servers],
         key='select_server',
@@ -79,7 +77,7 @@ if login == db_login and encoded_password == key:
         edit_server_name: str = st.text_input(
             'Название',
             key='edit_serv_name',
-            value=st.session_state.select_server.split()[0] if st.session_state.select_server else None
+            value=st.session_state.select_server if st.session_state.select_server else None
         )
 
         data: dict = {
@@ -103,7 +101,7 @@ if login == db_login and encoded_password == key:
 
     st.header('Удалить')
     with st.form(key='delete_form'):
-        select_server: list[Server] = st.selectbox(
+        select_server: str = st.selectbox(
             'Выберите сотрудника',
             options=[server.server_name for server in servers],
             key='delete_server',

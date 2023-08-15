@@ -5,7 +5,6 @@ from pandas import DataFrame
 
 from DAO.admin import AdminDAO
 from DAO.department import DepartmentDAO
-from DAO.models import Department
 from main import departments, salt
 
 st.set_page_config(
@@ -66,7 +65,7 @@ if login == db_login and encoded_password == key:
                 st.error(f'Ошибка добавления: {e}')
 
     st.header('Обновить')
-    select_department: list[Department] = st.selectbox(
+    select_department: str = st.selectbox(
         'Выберите департамент',
         options=[department.department_name for department in departments],
         key='select_department',
@@ -75,7 +74,7 @@ if login == db_login and encoded_password == key:
         edit_department_name: str = st.text_input(
             'Название',
             key='edit_dep_name',
-            value=st.session_state.select_department.split()[0] if st.session_state.select_department else None
+            value=st.session_state.select_department if st.session_state.select_department else None
         )
 
         data: dict = {
@@ -99,7 +98,7 @@ if login == db_login and encoded_password == key:
 
     st.header('Удалить')
     with st.form(key='delete_form'):
-        select_department: list[Department] = st.selectbox(
+        select_department: str = st.selectbox(
             'Выберите сотрудника',
             options=[department.department_name for department in departments],
             key='delete_department',

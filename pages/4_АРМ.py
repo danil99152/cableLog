@@ -5,7 +5,6 @@ from pandas import DataFrame
 
 from DAO.admin import AdminDAO
 from DAO.aws import AwsDAO
-from DAO.models import AWS
 from main import aws, employees, salt
 
 st.set_page_config(
@@ -22,7 +21,6 @@ password: str = st.text_input(
 
 db_login = AdminDAO().get(index=1)[0].login
 key = AdminDAO().get(index=1)[0].password
-
 
 encoded_password = hashlib.pbkdf2_hmac(
     'sha256',
@@ -86,31 +84,40 @@ if login == db_login and encoded_password == key:
             except Exception as e:
                 st.error(f'Ошибка добавления: {e}')
 
+    aws_dict = dict(((
+                         aw.ip,
+                         aw.mac,
+                         aw.employee_id
+                     ),
+                     aw.pc_name) for aw in aws)
     st.header('Обновить')
-    select_aws: list[AWS] = st.selectbox(
+    select_aws: str = st.selectbox(
         'Выберите АРМ',
-        options=[aw.pc_name for aw in aws],
+        options=list(aws_dict.keys()),
+        format_func=lambda x: aws_dict[x],
         key='select_aws',
     )
+
     with st.form(key='edit_form'):
         edit_pc_name: str = st.text_input(
             'Имя АРМ',
             key='edit_pc_name',
-            value=st.session_state.select_aws.split()[0] if st.session_state.select_aws else None
+            value=aws_dict[st.session_state.select_aws] if st.session_state.select_aws else None
         )
         edit_ip: str = st.text_input(
             'IP адрес АРМ',
             key='edit_ip',
-            value=st.session_state.select_aws.split()[1] if st.session_state.select_aws else None
+            value=st.session_state.select_aws[0] if st.session_state.select_aws else None
         )
         edit_mac: str = st.text_input(
             'MAC адрес АРМ',
             key='edit_mac',
-            value=st.session_state.select_aws.split()[2] if st.session_state.select_aws else None
+            value=st.session_state.select_aws[1] if st.session_state.select_aws else None
         )
         edit_employee = st.selectbox(
-            'Подразделение',
+            'Работник',
             options=[employee.full_name for employee in employees],
+            index=st.session_state.select_aws[2] - 1,
             key='edit_employee'
         )
 
@@ -141,7 +148,7 @@ if login == db_login and encoded_password == key:
 
     st.header('Удалить')
     with st.form(key='delete_form'):
-        select_aws: list[AWS] = st.selectbox(
+        select_aws: str = st.selectbox(
             'Выберите АРМ',
             options=[aw.pc_name for aw in aws],
             key='delete_aws',
