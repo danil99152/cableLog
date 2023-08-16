@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 # путь до БД
-database_url = "sqlite:///DAO/DB/cables.db"
+database_url = "sqlite:///core/DAO/DB/cables.db"
 
 # Создание движка подключения
 engine = create_engine(database_url)

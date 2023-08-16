@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy.orm import relationship, DeclarativeBase
 
 
@@ -59,7 +59,7 @@ class CableLine(Base):
     socket_num = Column(Integer)
     socket_port = Column(Integer)
     patchpanel_port = Column(Integer)
-    length = Column(Integer)
+    length = Column(Float)
 
     aws_id = Column(Integer, ForeignKey('aws.id'), index=True)
     aws = relationship(AWS, backref='cable_lines')

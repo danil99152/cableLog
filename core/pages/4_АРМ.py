@@ -137,7 +137,7 @@ if login == db_login and encoded_password == key:
                 AwsDAO().update(
                     id_x=[
                         aw.id for aw in aws
-                        if aw.pc_name == st.session_state.select_aw
+                        if aw.pc_name == aws_dict[st.session_state.select_aws]
                     ][0],
                     data=data
                 )

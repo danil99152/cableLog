@@ -150,7 +150,7 @@ st.dataframe(
             format="№ %d",
         ),
         'Длина': st.column_config.NumberColumn(
-            format="%dм",
+            format="%.2fм",
         ),
     },
 )

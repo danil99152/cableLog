@@ -88,15 +88,16 @@ if login == db_login and encoded_password == key:
 
     st.header('Обновить')
     cable_lines_dict = dict(((
+                                 cl.socket_num,
                                  cl.socket_port,
                                  cl.patchpanel_port,
                                  cl.length,
                                  cl.aws_id,
                                  cl.server_id
                              ),
-                             cl.socket_num) for cl in cable_lines)
+                             cl.id) for cl in cable_lines)
 
-    select_cl: list = st.selectbox(
+    select_cl: str = st.selectbox(
         'Выберите кабельную линию',
         options=list(cable_lines_dict.keys()),
         format_func=lambda x: cable_lines_dict[x],
@@ -106,40 +107,40 @@ if login == db_login and encoded_password == key:
         edit_socket: str = st.text_input(
             'Номер розетки',
             key='socket_num',
-            value=cable_lines_dict[st.session_state.select_cl] if st.session_state.select_cl else None
+            value=st.session_state.select_cl[0] if st.session_state.select_cl else None
         )
         edit_socket_port: str = st.text_input(
             'Номер порта розетки',
             key='socket_port',
-            value=st.session_state.select_cl[0] if st.session_state.select_cl else None
+            value=st.session_state.select_cl[1] if st.session_state.select_cl else None
         )
         edit_patchpanel: str = st.text_input(
             'Номер порта патчпанели',
             key='patch_panel',
-            value=st.session_state.select_cl[1] if st.session_state.select_cl else None
+            value=st.session_state.select_cl[2] if st.session_state.select_cl else None
         )
         edit_length: str = st.text_input(
             'Длина',
             key='length',
-            value=st.session_state.select_cl[2] if st.session_state.select_cl else None
+            value=st.session_state.select_cl[3] if st.session_state.select_cl else None
         )
         edit_department = st.selectbox(
             'АРМ',
             options=[aw.pc_name for aw in aws],
-            index=st.session_state.select_cl[3] - 1,
+            index=st.session_state.select_cl[4] - 1,
             key='edit_aws'
         )
         edit_server = st.selectbox(
             'Серверная',
             options=[server.server_name for server in servers],
-            index=st.session_state.select_cl[4] - 1,
+            index=st.session_state.select_cl[5] - 1,
             key='edit_server'
         )
 
         data: dict = {
             'socket_num': st.session_state.socket_num,
             'socket_port': st.session_state.socket_port,
-            'patch_panel': st.session_state.patch_panel,
+            'patchpanel_port': st.session_state.patch_panel,
             'length': st.session_state.length,
             'aws_id': [
                 aw.id for aw in aws
@@ -155,10 +156,7 @@ if login == db_login and encoded_password == key:
         if updated:
             try:
                 CableLineDAO().update(
-                    id_x=[
-                        cl.id for cl in cable_lines
-                        if cl.id == st.session_state.select_cl
-                    ][0],
+                    id_x=cable_lines_dict[st.session_state.select_cl],
                     data=data
                 )
                 st.success(
@@ -178,10 +176,7 @@ if login == db_login and encoded_password == key:
         if deleted:
             try:
                 CableLineDAO().delete(
-                    id_x=[
-                        cl.id for cl in cable_lines
-                        if cl.id == st.session_state.delete_cl
-                    ][0]
+                    id_x=st.session_state.delete_cl
                 )
                 st.success(
                     'Линия удалена',
